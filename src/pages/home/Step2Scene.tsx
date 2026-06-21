@@ -34,9 +34,9 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
       const { width } = scene.getBoundingClientRect();
 
       if (width < 768) {
-        const scaledBowl = Math.min(width * 0.85, 340); // 85% of screen width, max 340px
+        const scaledBowl = Math.min(width * 0.95, 380); // 95% of screen width, max 380px
         setBowlWidth(scaledBowl);
-        setStirrerWidth(scaledBowl * 0.5); // stirrer is 50% of the bowl size for mobile readability
+        setStirrerWidth(scaledBowl * 0.48); // stirrer is 48% of the bowl size for mobile readability
       } else {
         setBowlWidth(720);
         setStirrerWidth(360);
@@ -210,15 +210,20 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
       lastPosRef.current = null;
     };
 
+    const scene = sceneRef.current;
+    if (!scene) return;
+
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
-    window.addEventListener('touchend', onMouseUp);
+    scene.addEventListener('touchmove', onTouchMove, { passive: false });
+    scene.addEventListener('touchend', onMouseUp);
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onMouseUp);
+      if (scene) {
+        scene.removeEventListener('touchmove', onTouchMove);
+        scene.removeEventListener('touchend', onMouseUp);
+      }
     };
   }, [isDragging, onComplete, bowlWidth, progress]);
 

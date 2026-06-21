@@ -280,83 +280,101 @@ export default function Step1Scene({ onComplete, visible }: Step1SceneProps) {
     }
   };
 
-  // ── TOUCH EVENTS ──
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (phase === 'completed') return;
-    if (phase === 'topdown') {
-      sawingState.current.isSawing = true;
-      const touch = e.touches[0];
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      sawingState.current.lastX = touch.clientX - rect.left;
-      sawingState.current.lastY = touch.clientY - rect.top;
-    }
-  };
+  // ── NATIVE TOUCH EVENTS FOR VIEWPORT LOCK ──
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !visible) return;
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (phase === 'completed') return;
-    const touch = e.touches[0];
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const mx = touch.clientX - rect.left;
-    const my = touch.clientY - rect.top;
-
-    if (phase === 'topdown') {
-      if (!sawRef.current) return;
-      sawRef.current.style.left = `${mx}px`;
-      sawRef.current.style.top = `${my}px`;
-
-      if (sawingState.current.isSawing) {
-        const dx = mx - sawingState.current.lastX;
-        const dy = my - sawingState.current.lastY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist > 5) {
-          sawingState.current.lastX = mx;
-          sawingState.current.lastY = my;
-          
-          const colors = ['#C49A6C', '#D5AF82', '#A67C4D', '#E5C29D'];
-          const spawnAmount = Math.floor(dist / 4);
-          for(let i=0; i<spawnAmount; i++) {
-            topdownParticles.current.push({
-              x: mx + (Math.random() - 0.5) * 40,
-              y: my + (Math.random() - 0.5) * 40,
-              vx: (Math.random() - 0.5) * 4,
-              vy: (Math.random() - 0.5) * 4,
-              life: 1,
-              size: 3 + Math.random() * 5,
-              color: colors[Math.floor(Math.random() * colors.length)],
-              angle: Math.random() * Math.PI * 2,
-              vAngle: (Math.random() - 0.5) * 0.5,
-            });
-            sawingState.current.spawnCount++;
-          }
-
-          if (sawingState.current.spawnCount >= TARGET_SAWDUST) {
-            setPhase('transition');
-            sawingState.current.isSawing = false;
-          }
-        }
+    const handleTouchStartNative = (e: TouchEvent) => {
+      if (phase === 'completed') return;
+      if (phase === 'topdown') {
+        sawingState.current.isSawing = true;
+        const touch = e.touches[0];
+        const rect = container.getBoundingClientRect();
+        sawingState.current.lastX = touch.clientX - rect.left;
+        sawingState.current.lastY = touch.clientY - rect.top;
       }
-    } else if (phase === '45deg') {
-      particles45.current.forEach(p => {
-        if (!p.isLanded) return;
-        const dx = p.x - mx;
-        const dy = p.y - my;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist < 60) {
-          p.isLanded = false;
-          p.vx = (dx / dist) * 15;
-          p.vy = (dy / dist) * 15 - 5;
-        }
-      });
-    }
-  };
+    };
 
-  const handleTouchEnd = () => {
-    if (phase === 'topdown') sawingState.current.isSawing = false;
-  };
+    const handleTouchMoveNative = (e: TouchEvent) => {
+      if (phase === 'completed') return;
+      // Strictly prevent browser scrolling while drawing/sweeping
+      e.preventDefault();
+
+      const touch = e.touches[0];
+      const rect = container.getBoundingClientRect();
+      const mx = touch.clientX - rect.left;
+      const my = touch.clientY - rect.top;
+
+      if (phase === 'topdown') {
+        if (!sawRef.current) return;
+        sawRef.current.style.left = `${mx}px`;
+        sawRef.current.style.top = `${my}px`;
+
+        if (sawingState.current.isSawing) {
+          const dx = mx - sawingState.current.lastX;
+          const dy = my - sawingState.current.lastY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 5) {
+            sawingState.current.lastX = mx;
+            sawingState.current.lastY = my;
+            
+            const colors = ['#C49A6C', '#D5AF82', '#A67C4D', '#E5C29D'];
+            const spawnAmount = Math.floor(dist / 4);
+            for(let i=0; i<spawnAmount; i++) {
+              topdownParticles.current.push({
+                x: mx + (Math.random() - 0.5) * 40,
+                y: my + (Math.random() - 0.5) * 40,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                life: 1,
+                size: 3 + Math.random() * 5,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                angle: Math.random() * Math.PI * 2,
+                vAngle: (Math.random() - 0.5) * 0.5,
+              });
+              sawingState.current.spawnCount++;
+            }
+
+            if (sawingState.current.spawnCount >= TARGET_SAWDUST) {
+              setPhase('transition');
+              sawingState.current.isSawing = false;
+            }
+          }
+        }
+      } else if (phase === '45deg') {
+        particles45.current.forEach(p => {
+          if (!p.isLanded) return;
+          const dx = p.x - mx;
+          const dy = p.y - my;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist < 60) {
+            p.isLanded = false;
+            p.vx = (dx / dist) * 15;
+            p.vy = (dy / dist) * 15 - 5;
+          }
+        });
+      }
+    };
+
+    const handleTouchEndNative = () => {
+      if (phase === 'topdown') sawingState.current.isSawing = false;
+    };
+
+    container.addEventListener('touchstart', handleTouchStartNative);
+    container.addEventListener('touchmove', handleTouchMoveNative, { passive: false });
+    container.addEventListener('touchend', handleTouchEndNative);
+    container.addEventListener('touchcancel', handleTouchEndNative);
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStartNative);
+      container.removeEventListener('touchmove', handleTouchMoveNative);
+      container.removeEventListener('touchend', handleTouchEndNative);
+      container.removeEventListener('touchcancel', handleTouchEndNative);
+    };
+  }, [phase, visible]);
 
   if (!visible) return null;
 
@@ -379,10 +397,6 @@ export default function Step1Scene({ onComplete, visible }: Step1SceneProps) {
       onMouseLeave={() => {
         if (phase === 'topdown') sawingState.current.isSawing = false;
       }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
     >
       {/* ── PHASE 1: TOP DOWN ── */}
       {(phase === 'topdown' || phase === 'transition' || phase === 'loading') && (
