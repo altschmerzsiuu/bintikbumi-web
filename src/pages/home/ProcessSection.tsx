@@ -13,9 +13,8 @@ export default function ProcessSection() {
   const [displayStep, setDisplayStep] = React.useState(0);
   const [sceneVisible, setSceneVisible] = React.useState(true);
   const [ghostVisible, setGhostVisible] = React.useState(true);
-  
   const [maxReachedStep, setMaxReachedStep] = React.useState(0);
-  const [allDone, setAllDone] = React.useState(false);
+  const [isScrollLocked, setIsScrollLocked] = React.useState(false);
   const sectionRef = React.useRef<HTMLDivElement>(null);
   const dioramaRef = React.useRef<HTMLDivElement>(null);
 
@@ -42,45 +41,33 @@ export default function ProcessSection() {
 
   React.useEffect(() => {
     const isMobile = window.innerWidth < 768;
-    const targetElement = isMobile ? dioramaRef.current : sectionRef.current;
-    if (!targetElement || allDone) {
+    if (isScrollLocked && isMobile) {
+      // Scroll precisely to target and lock Lenis + standard touch scrolling
+      // On mobile, offset by -100px so the diorama container is centered and fully visible below navbar
+      if (dioramaRef.current) {
+        (window as any).lenis?.scrollTo(dioramaRef.current, { 
+          immediate: true,
+          offset: -100
+        });
+      }
+      (window as any).lenis?.stop();
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100vh';
+      document.addEventListener('touchmove', preventDefaultTouch, { passive: false });
+    } else {
       (window as any).lenis?.start();
       document.body.style.overflow = '';
       document.body.style.height = '';
       document.removeEventListener('touchmove', preventDefaultTouch);
-      return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !allDone) {
-            // Scroll precisely to target and lock Lenis + standard touch scrolling
-            // On mobile, offset by -100px so the diorama container is centered and fully visible below navbar
-            (window as any).lenis?.scrollTo(entry.target, { 
-              immediate: true,
-              offset: isMobile ? -100 : 0
-            });
-            (window as any).lenis?.stop();
-            document.body.style.overflow = 'hidden';
-            document.body.style.height = '100vh';
-            document.addEventListener('touchmove', preventDefaultTouch, { passive: false });
-          }
-        });
-      },
-      { threshold: isMobile ? 0.05 : 0.15 }
-    );
-
-    observer.observe(targetElement);
-
     return () => {
-      observer.disconnect();
       document.body.style.overflow = '';
       document.body.style.height = '';
       document.removeEventListener('touchmove', preventDefaultTouch);
       (window as any).lenis?.start();
     };
-  }, [allDone, preventDefaultTouch]);
+  }, [isScrollLocked, preventDefaultTouch]);
 
   return (
     <section ref={sectionRef} className="bb-process-section">
@@ -154,16 +141,20 @@ export default function ProcessSection() {
           {displayStep === 0 ? (
             <Step1Scene
               visible={sceneVisible}
+              onStartInteraction={() => setIsScrollLocked(true)}
               onComplete={() => {
                 setMaxReachedStep(1);
+                setIsScrollLocked(false);
                 handleStepChange(1);
               }}
             />
           ) : displayStep === 1 ? (
             <Step2Scene
               visible={sceneVisible}
+              onStartInteraction={() => setIsScrollLocked(true)}
               onComplete={() => {
                 setMaxReachedStep(2);
+                setIsScrollLocked(false);
                 handleStepChange(2);
               }}
             />
@@ -171,7 +162,7 @@ export default function ProcessSection() {
             <Step3Scene
               visible={sceneVisible}
               onComplete={() => {
-                setAllDone(true);
+                setIsScrollLocked(false);
               }}
             />
           )}

@@ -12,6 +12,7 @@ import imgSawTopdownRaw from '../../assets/process3D/topdown-saw.png';
 
 interface Step1SceneProps {
   onComplete: () => void;
+  onStartInteraction?: () => void;
   visible: boolean;
 }
 
@@ -30,7 +31,7 @@ interface Particle {
   isLanded?: boolean;
 }
 
-export default function Step1Scene({ onComplete, visible }: Step1SceneProps) {
+export default function Step1Scene({ onComplete, onStartInteraction, visible }: Step1SceneProps) {
   const { t } = useLanguage();
   const [phase, setPhase] = useState<Phase>('loading');
   const [assets, setAssets] = useState<{ tdLog: string; tdSaw: string; log45: string; basket45: string } | null>(null);
@@ -287,6 +288,7 @@ export default function Step1Scene({ onComplete, visible }: Step1SceneProps) {
 
     const handleTouchStartNative = (e: TouchEvent) => {
       if (phase === 'completed') return;
+      if (onStartInteraction) onStartInteraction();
       if (phase === 'topdown') {
         sawingState.current.isSawing = true;
         const touch = e.touches[0];
@@ -374,7 +376,7 @@ export default function Step1Scene({ onComplete, visible }: Step1SceneProps) {
       container.removeEventListener('touchend', handleTouchEndNative);
       container.removeEventListener('touchcancel', handleTouchEndNative);
     };
-  }, [phase, visible]);
+  }, [phase, visible, onStartInteraction]);
 
   if (!visible) return null;
 
@@ -385,6 +387,7 @@ export default function Step1Scene({ onComplete, visible }: Step1SceneProps) {
       style={{ touchAction: 'none' }}
       onMouseMove={phase === 'topdown' ? handleTopdownMouseMove : handleSweepMouseMove}
       onMouseDown={(e) => {
+        if (onStartInteraction) onStartInteraction();
         if (phase === 'topdown') {
           sawingState.current.isSawing = true;
           sawingState.current.lastX = e.clientX - (containerRef.current?.getBoundingClientRect().left || 0);

@@ -7,9 +7,10 @@ import imgBowlMixed from '../../assets/process3D/assets-2d-fullmixed.png';
 interface Step2SceneProps {
   visible: boolean;
   onComplete: () => void;
+  onStartInteraction?: () => void;
 }
 
-export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
+export default function Step2Scene({ visible, onComplete, onStartInteraction }: Step2SceneProps) {
   const { t } = useLanguage();
   const sceneRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +69,7 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
     e.preventDefault();
     if (completedRef.current) return;
     setIsDragging(true);
+    if (onStartInteraction) onStartInteraction();
 
     const scene = sceneRef.current;
     if (!scene) return;
@@ -81,6 +83,7 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
   const handleTouchStart = (e: React.TouchEvent) => {
     if (completedRef.current) return;
     setIsDragging(true);
+    if (onStartInteraction) onStartInteraction();
 
     const scene = sceneRef.current;
     if (!scene) return;
