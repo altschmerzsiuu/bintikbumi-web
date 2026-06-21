@@ -17,6 +17,7 @@ export default function ProcessSection() {
   const [maxReachedStep, setMaxReachedStep] = React.useState(0);
   const [allDone, setAllDone] = React.useState(false);
   const sectionRef = React.useRef<HTMLDivElement>(null);
+  const dioramaRef = React.useRef<HTMLDivElement>(null);
 
   const handleStepChange = (i: number) => {
     if (i === activeStep) return;
@@ -32,7 +33,7 @@ export default function ProcessSection() {
 
   // Prevent default scroll behaviors on touchmove for mobile view lock
   const preventDefaultTouch = React.useCallback((e: TouchEvent) => {
-    const processRight = document.querySelector('.bb-process-right');
+    const processRight = dioramaRef.current;
     if (processRight && processRight.contains(e.target as Node)) {
       return; // allow interaction inside the diorama
     }
@@ -41,7 +42,8 @@ export default function ProcessSection() {
 
   React.useEffect(() => {
     const isMobile = window.innerWidth < 768;
-    if (!isMobile || allDone) {
+    const targetElement = isMobile ? dioramaRef.current : sectionRef.current;
+    if (!targetElement || allDone) {
       (window as any).lenis?.start();
       document.body.style.overflow = '';
       document.body.style.height = '';
@@ -53,8 +55,12 @@ export default function ProcessSection() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && !allDone) {
-            // Scroll precisely to section and lock Lenis + standard touch scrolling
-            (window as any).lenis?.scrollTo(entry.target, { immediate: true });
+            // Scroll precisely to target and lock Lenis + standard touch scrolling
+            // On mobile, offset by -100px so the diorama container is centered and fully visible below navbar
+            (window as any).lenis?.scrollTo(entry.target, { 
+              immediate: true,
+              offset: isMobile ? -100 : 0
+            });
             (window as any).lenis?.stop();
             document.body.style.overflow = 'hidden';
             document.body.style.height = '100vh';
@@ -62,12 +68,10 @@ export default function ProcessSection() {
           }
         });
       },
-      { threshold: 0.15 }
+      { threshold: isMobile ? 0.05 : 0.15 }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
+    observer.observe(targetElement);
 
     return () => {
       observer.disconnect();
@@ -146,7 +150,7 @@ export default function ProcessSection() {
         </div>
 
         {/* ── RIGHT PANEL — the diorama ── */}
-        <div className="bb-process-right">
+        <div ref={dioramaRef} className="bb-process-right">
           {displayStep === 0 ? (
             <Step1Scene
               visible={sceneVisible}
