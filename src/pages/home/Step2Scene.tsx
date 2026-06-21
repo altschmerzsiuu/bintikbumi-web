@@ -65,6 +65,46 @@ export default function Step2Scene({ visible, onComplete, onStartInteraction }: 
     });
   }, [bowlWidth]);
 
+  // Mobile Autoplay for Step 2
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile || !visible || completedRef.current) return;
+
+    let t = 0;
+    const interval = setInterval(() => {
+      const scene = sceneRef.current;
+      if (!scene) return;
+      const rect = scene.getBoundingClientRect();
+      
+      const bowlCx = rect.width / 2;
+      const bowlCy = rect.height * 0.45;
+      const innerRadius = bowlWidth * 0.3; // slightly smaller radius for neat circles
+
+      t += 0.15;
+      // Circular motion inside the bowl
+      const targetX = bowlCx + Math.cos(t) * innerRadius;
+      const targetY = bowlCy + Math.sin(t) * innerRadius;
+
+      setStirrerPos({ x: targetX, y: targetY });
+
+      setProgress(prev => {
+        const next = Math.min(100, prev + 1.5); // auto increment progress
+        const roundedNext = Math.round(next);
+        if (roundedNext >= 100 && !completedRef.current) {
+          completedRef.current = true;
+          clearInterval(interval);
+          setIsDragging(false);
+          setTimeout(() => {
+            onComplete();
+          }, 1000);
+        }
+        return roundedNext;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [visible, bowlWidth, onComplete]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     if (completedRef.current) return;

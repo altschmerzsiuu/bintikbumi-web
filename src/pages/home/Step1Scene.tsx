@@ -206,6 +206,78 @@ export default function Step1Scene({ onComplete, onStartInteraction, visible }: 
     }
   }, [phase, onComplete]);
 
+  // Mobile Autoplay for Step 1
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile || !visible || phase === 'completed') return;
+
+    if (phase === 'topdown') {
+      let t = 0;
+      const interval = setInterval(() => {
+        t += 0.15;
+        // Simulate saw moving left and right across the log
+        const container = containerRef.current;
+        if (!container || !sawRef.current) return;
+        const rect = container.getBoundingClientRect();
+        
+        const centerX = rect.width * 0.5;
+        const centerY = rect.height * 0.55;
+        
+        const mx = centerX + Math.sin(t * 3) * 60;
+        const my = centerY + Math.cos(t * 0.5) * 10;
+
+        sawRef.current.style.left = `${mx}px`;
+        sawRef.current.style.top = `${my}px`;
+
+        // Spawn particles
+        const colors = ['#C49A6C', '#D5AF82', '#A67C4D', '#E5C29D'];
+        for (let i = 0; i < 4; i++) {
+          topdownParticles.current.push({
+            x: mx + (Math.random() - 0.5) * 30,
+            y: my + (Math.random() - 0.5) * 30,
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.5) * 3,
+            life: 1,
+            size: 3 + Math.random() * 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            angle: Math.random() * Math.PI * 2,
+            vAngle: (Math.random() - 0.5) * 0.3,
+          });
+          sawingState.current.spawnCount++;
+        }
+
+        if (sawingState.current.spawnCount >= TARGET_SAWDUST) {
+          clearInterval(interval);
+          setPhase('transition');
+        }
+      }, 50);
+
+      return () => clearInterval(interval);
+    } 
+    
+    if (phase === '45deg') {
+      // Auto sweep: gradually make particles float to the basket
+      let index = 0;
+      const interval = setInterval(() => {
+        const particlesToSweep = 8;
+        for (let i = 0; i < particlesToSweep; i++) {
+          const p = particles45.current[index];
+          if (p) {
+            p.isLanded = false;
+            p.vx = (Math.random() - 0.5) * 2;
+            p.vy = -3 - Math.random() * 3;
+            index++;
+          }
+        }
+        if (index >= particles45.current.length) {
+          clearInterval(interval);
+        }
+      }, 80);
+
+      return () => clearInterval(interval);
+    }
+  }, [phase, visible]);
+
   // ── MOUSE EVENTS ──
   const handleTopdownMouseMove = (e: React.MouseEvent) => {
     if (phase !== 'topdown') return;
