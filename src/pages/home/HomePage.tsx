@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import RevealWrapper from '../../components/ui/RevealWrapper';
 import { BB_FEATURES, BB_APPLICATIONS } from '../../data/content';
-import imgHeroBg from '../../assets/main/hero-bg.png';
+import imgHeroBg from '../../assets/main/hero-bg.jpg';
 import CTASection from '../../components/ui/CTASection';
 
 export default function HomePage() {
