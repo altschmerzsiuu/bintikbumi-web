@@ -3,6 +3,7 @@ import videoStep3 from '../../assets/process3D/assets-step3.webm';
 
 interface Step3SceneProps {
   visible: boolean;
+  onComplete?: () => void;
 }
 
 // Custom ChromaKeyVideo component to dynamically strip the white background
@@ -71,7 +72,7 @@ function ChromaKeyVideo({ src, className, style }: { src: string; className?: st
   );
 }
 
-export default function Step3Scene({ visible }: Step3SceneProps) {
+export default function Step3Scene({ visible, onComplete }: Step3SceneProps) {
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
@@ -79,11 +80,22 @@ export default function Step3Scene({ visible }: Step3SceneProps) {
       const timer = setTimeout(() => {
         setAnimate(true);
       }, 150);
-      return () => clearTimeout(timer);
+
+      // Trigger completion after 5.5 seconds of viewing the video
+      const completionTimer = setTimeout(() => {
+        if (onComplete) {
+          onComplete();
+        }
+      }, 5500);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(completionTimer);
+      };
     } else {
       setAnimate(false);
     }
-  }, [visible]);
+  }, [visible, onComplete]);
 
   return (
     <div

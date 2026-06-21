@@ -13,6 +13,10 @@ export default function ProcessSection() {
   const [displayStep, setDisplayStep] = React.useState(0);
   const [sceneVisible, setSceneVisible] = React.useState(true);
   const [ghostVisible, setGhostVisible] = React.useState(true);
+  
+  const [maxReachedStep, setMaxReachedStep] = React.useState(0);
+  const [allDone, setAllDone] = React.useState(false);
+  const sectionRef = React.useRef<HTMLDivElement>(null);
 
   const handleStepChange = (i: number) => {
     if (i === activeStep) return;
@@ -26,8 +30,56 @@ export default function ProcessSection() {
     }, 400);
   };
 
+  // Prevent default scroll behaviors on touchmove for mobile view lock
+  const preventDefaultTouch = React.useCallback((e: TouchEvent) => {
+    const processRight = document.querySelector('.bb-process-right');
+    if (processRight && processRight.contains(e.target as Node)) {
+      return; // allow interaction inside the diorama
+    }
+    e.preventDefault();
+  }, []);
+
+  React.useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile || allDone) {
+      (window as any).lenis?.start();
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      document.removeEventListener('touchmove', preventDefaultTouch);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !allDone) {
+            // Scroll precisely to section and lock Lenis + standard touch scrolling
+            (window as any).lenis?.scrollTo(entry.target, { immediate: true });
+            (window as any).lenis?.stop();
+            document.body.style.overflow = 'hidden';
+            document.body.style.height = '100vh';
+            document.addEventListener('touchmove', preventDefaultTouch, { passive: false });
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      document.removeEventListener('touchmove', preventDefaultTouch);
+      (window as any).lenis?.start();
+    };
+  }, [allDone, preventDefaultTouch]);
+
   return (
-    <section className="bb-process-section">
+    <section ref={sectionRef} className="bb-process-section">
       <div className="bb-process-layout">
 
         {/* ── LEFT PANEL ── */}
@@ -69,18 +121,26 @@ export default function ProcessSection() {
 
           {/* Tabs */}
           <div className="bb-process-tabs">
-            {BB_PROCESS.map((step, i) => (
-              <button
-                key={i}
-                className={`bb-process-tab${activeStep === i ? ' active' : ''}`}
-                onClick={() => handleStepChange(i)}
-              >
-                <span className="bb-process-tab-num">0{step.step}</span>
-                <span className="bb-process-tab-title">
-                  {lang === 'EN' ? step.title.EN : step.title.ID}
-                </span>
-              </button>
-            ))}
+            {BB_PROCESS.map((step, i) => {
+              const isDisabled = i > maxReachedStep;
+              return (
+                <button
+                  key={i}
+                  className={`bb-process-tab${activeStep === i ? ' active' : ''}`}
+                  disabled={isDisabled}
+                  style={{
+                    opacity: isDisabled ? 0.35 : 1,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer'
+                  }}
+                  onClick={() => handleStepChange(i)}
+                >
+                  <span className="bb-process-tab-num">0{step.step}</span>
+                  <span className="bb-process-tab-title">
+                    {lang === 'EN' ? step.title.EN : step.title.ID}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
         </div>
@@ -91,16 +151,25 @@ export default function ProcessSection() {
             <Step1Scene
               visible={sceneVisible}
               onComplete={() => {
-                // Future expansion: auto-advance or reveal more UI
+                setMaxReachedStep(1);
+                handleStepChange(1);
               }}
             />
           ) : displayStep === 1 ? (
             <Step2Scene
               visible={sceneVisible}
-              onComplete={() => handleStepChange(2)}
+              onComplete={() => {
+                setMaxReachedStep(2);
+                handleStepChange(2);
+              }}
             />
           ) : (
-            <Step3Scene visible={sceneVisible} />
+            <Step3Scene
+              visible={sceneVisible}
+              onComplete={() => {
+                setAllDone(true);
+              }}
+            />
           )}
         </div>
 
