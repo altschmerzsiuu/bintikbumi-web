@@ -1,0 +1,26 @@
+[
+  {
+    "id": "64",
+    "nama": "KALIMANTAN TIMUR",
+    "cities": [
+      { "id": "6471", "nama": "KOTA BALIKPAPAN" },
+      { "id": "6472", "nama": "KOTA SAMARINDA" }
+    ]
+  },
+  {
+    "id": "31",
+    "nama": "DKI JAKARTA",
+    "cities": [
+      { "id": "3171", "nama": "KOTA JAKARTA SELATAN" },
+      { "id": "3172", "nama": "KOTA JAKARTA PUSAT" }
+    ]
+  },
+  {
+    "id": "51",
+    "nama": "BALI",
+    "cities": [
+      { "id": "5171", "nama": "KOTA DENPASAR" },
+      { "id": "5103", "nama": "KABUPATEN BADUNG" }
+    ]
+  }
+]
