@@ -11,10 +11,10 @@ export default function Footer() {
       <div className="section-container">
 
         {/* Top Section - 3 Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-24 mb-20">
+        <div className="grid grid-cols-2 md:grid-cols-12 gap-12 lg:gap-24 mb-20">
 
           {/* Column 1 — Brand */}
-          <div className="md:col-span-5 flex flex-col items-start">
+          <div className="col-span-2 md:col-span-5 flex flex-col items-start">
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'white', letterSpacing: '0.04em', marginBottom: '8px' }}>
               BINTIKBUMI
             </div>
@@ -25,7 +25,7 @@ export default function Footer() {
           </div>
 
           {/* Column 2 — EKSPLOR */}
-          <div className="md:col-span-3 flex flex-col gap-4">
+          <div className="col-span-1 md:col-span-3 flex flex-col gap-4">
             <h5 className="font-condensed text-white/40 tracking-widest text-xs mb-2 uppercase">
               {t('EXPLORE', 'EKSPLOR')}
             </h5>
@@ -36,7 +36,7 @@ export default function Footer() {
           </div>
 
           {/* Column 3 — PERUSAHAAN */}
-          <div className="md:col-span-4 flex flex-col gap-4">
+          <div className="col-span-1 md:col-span-4 flex flex-col gap-4">
             <h5 className="font-condensed text-white/40 tracking-widest text-xs mb-2 uppercase">
               {t('COMPANY', 'PERUSAHAAN')}
             </h5>

@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import RevealWrapper from '../../components/ui/RevealWrapper';
 import { BB_PRODUCTS } from '../../data/content';
-import backgroundImage from '../../assets/main/bintikmaterial.png'
+import backgroundImage from '../../assets/main/bintikmaterial.jpg'
 import CTASection from '../../components/ui/CTASection';
 
 export default function ProductsPage() {

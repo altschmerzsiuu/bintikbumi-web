@@ -22,10 +22,31 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
   const completedRef = useRef(false);
 
-  // Size constants
-  const bowlWidth = 720;      // Ukuran panci awal (sebelum teraduk penuh)
-  const bowlMixedWidth = 720; // Ukuran panci kedua (setelah teraduk penuh/fullmixed)
-  const stirrerWidth = 360;    // Ukuran pengaduk
+  // Size states (responsive scaling for mobile)
+  const [bowlWidth, setBowlWidth] = useState(720);
+  const [stirrerWidth, setStirrerWidth] = useState(360);
+
+  // Resize handler to scale down the bowl and stirrer on mobile viewports
+  useEffect(() => {
+    const handleResize = () => {
+      const scene = sceneRef.current;
+      if (!scene) return;
+      const { width } = scene.getBoundingClientRect();
+
+      if (width < 768) {
+        const scaledBowl = Math.min(width * 0.85, 340); // 85% of screen width, max 340px
+        setBowlWidth(scaledBowl);
+        setStirrerWidth(scaledBowl * 0.5); // stirrer is 50% of the bowl size for mobile readability
+      } else {
+        setBowlWidth(720);
+        setStirrerWidth(360);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [visible]);
 
   // Set initial position of stirrer inside the bowl
   useEffect(() => {
@@ -57,6 +78,20 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
     lastPosRef.current = { x: mx, y: my };
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (completedRef.current) return;
+    setIsDragging(true);
+
+    const scene = sceneRef.current;
+    if (!scene) return;
+    const rect = scene.getBoundingClientRect();
+    const touch = e.touches[0];
+    const mx = touch.clientX - rect.left;
+    const my = touch.clientY - rect.top;
+
+    lastPosRef.current = { x: mx, y: my };
+  };
+
   useEffect(() => {
     if (!isDragging || completedRef.current) return;
 
@@ -77,8 +112,7 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
       const distToCenter = Math.sqrt(dx * dx + dy * dy);
 
       // Determine active bowl width and inner stirring zone radius
-      const currentBowlWidth = progress >= 80 ? bowlMixedWidth : bowlWidth;
-      const innerRadius = currentBowlWidth * 0.38; // 38% of bowl width is the inner mixing area
+      const innerRadius = bowlWidth * 0.38; // 38% of bowl width is the inner mixing area
 
       let targetX = mx;
       let targetY = my;
@@ -117,6 +151,60 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
       lastPosRef.current = { x: targetX, y: targetY };
     };
 
+    const onTouchMove = (e: TouchEvent) => {
+      // Prevent browser pull-to-refresh or scrolling during interaction
+      e.preventDefault();
+
+      const scene = sceneRef.current;
+      if (!scene) return;
+      const rect = scene.getBoundingClientRect();
+      const touch = e.touches[0];
+      const mx = touch.clientX - rect.left;
+      const my = touch.clientY - rect.top;
+
+      const bowlCx = rect.width / 2;
+      const bowlCy = rect.height * 0.45;
+
+      const dx = mx - bowlCx;
+      const dy = my - bowlCy;
+      const distToCenter = Math.sqrt(dx * dx + dy * dy);
+
+      const innerRadius = bowlWidth * 0.38;
+
+      let targetX = mx;
+      let targetY = my;
+
+      if (distToCenter > innerRadius) {
+        const angle = Math.atan2(dy, dx);
+        targetX = bowlCx + Math.cos(angle) * innerRadius;
+        targetY = bowlCy + Math.sin(angle) * innerRadius;
+      }
+
+      setStirrerPos({ x: targetX, y: targetY });
+
+      if (lastPosRef.current !== null) {
+        const sdx = targetX - lastPosRef.current.x;
+        const sdy = targetY - lastPosRef.current.y;
+        const distMoved = Math.sqrt(sdx * sdx + sdy * sdy);
+
+        if (distMoved > 0.5) {
+          setProgress(prev => {
+            const next = Math.min(100, prev + distMoved * 0.05);
+            const roundedNext = Math.round(next);
+            if (roundedNext >= 100 && !completedRef.current) {
+              completedRef.current = true;
+              setIsDragging(false);
+              setTimeout(() => {
+                onComplete();
+              }, 1000);
+            }
+            return roundedNext;
+          });
+        }
+      }
+      lastPosRef.current = { x: targetX, y: targetY };
+    };
+
     const onMouseUp = () => {
       setIsDragging(false);
       lastPosRef.current = null;
@@ -124,11 +212,15 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onMouseUp);
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onMouseUp);
     };
-  }, [isDragging, onComplete, bowlWidth, bowlMixedWidth, progress]);
+  }, [isDragging, onComplete, bowlWidth, progress]);
 
   return (
     <div
@@ -141,7 +233,8 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
         width: '100%',
         height: '100%',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        touchAction: 'none'
       }}
     >
       {/* Panci Awal (Sebelum teraduk penuh) */}
@@ -173,7 +266,7 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
           top: '45%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: `${bowlMixedWidth}px`,
+          width: `${bowlWidth}px`,
           maxWidth: 'none',
           zIndex: 4,
           pointerEvents: 'none',
@@ -187,6 +280,7 @@ export default function Step2Scene({ visible, onComplete }: Step2SceneProps) {
       {/* Stirrer (assets-2d-pengaduk.png) — draggable */}
       <div
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         style={{
           position: 'absolute',
           left: `${stirrerPos.x}px`,

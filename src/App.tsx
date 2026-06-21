@@ -59,7 +59,8 @@ export default function App() {
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // premium exponential easing
       smoothWheel: true,
       wheelMultiplier: 0.45, // Significantly damp scroll speed so users cannot rush down the page
-      touchMultiplier: 1.2,
+      touchMultiplier: 1.5,
+      syncTouch: true, // Enable smooth scroll damping on touch devices (mobile)
     });
 
     (window as any).lenis = lenis;
